@@ -181,14 +181,10 @@
   const scrollto = (el) => {
     let header = select('#header')
     let offset = header.offsetHeight
-
-    if (!header.classList.contains('header-scrolled')) {
-      offset -= 20
-    }
-
-    let elementPos = select(el).offsetTop
+    let element = select(el)
+    let elementPos = element.getBoundingClientRect().top + window.scrollY
     window.scrollTo({
-      top: elementPos - offset,
+      top: Math.max(0, elementPos - offset),
       behavior: 'smooth'
     })
   }
