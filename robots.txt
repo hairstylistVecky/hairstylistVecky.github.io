@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hairstylistvecky.github.io/sitemap.xml
