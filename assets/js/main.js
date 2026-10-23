@@ -18,11 +18,6 @@
   const newsList = document.querySelector('#news-list')
   const spreadsheetId = '1GN_7eX-07mccx-sPt2pxHjZEfO5RwX29tFRjSFhM4As'
 
-  const getCellValue = (row, index) => {
-    const cell = row.c[index]
-    return cell ? String(cell.f || cell.v || '').trim() : ''
-  }
-
   const findColumn = (headers, names) => headers.findIndex(header =>
     names.some(name => header.toLowerCase().includes(name))
   )
@@ -67,17 +62,25 @@
 
     rows.forEach(row => {
       const firstValue = row.find(Boolean) || ''
-      const title = titleIndex >= 0 ? row[titleIndex] : '最新消息'
-      const content = contentIndex >= 0 ? row[contentIndex] : (titleIndex >= 0 ? row[1] : firstValue)
+      const rawTitle = titleIndex >= 0 ? row[titleIndex] : ''
+      const rawContent = contentIndex >= 0 ? row[contentIndex] : firstValue
+      const contentLines = rawContent.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+      let title = rawTitle || contentLines.shift() || ''
+      if (title === '最新消息') title = contentLines.shift() || ''
+      if (contentLines[0] === '最新消息' || contentLines[0] === title) contentLines.shift()
+      const content = contentLines.join('\n')
       const date = dateIndex >= 0 ? row[dateIndex] : ''
       const link = linkIndex >= 0 ? row[linkIndex] : ''
+
+      if (!title && !content) return
+
       const article = document.createElement('article')
       article.className = 'news-item'
 
       const header = document.createElement('div')
       header.className = 'news-item-header'
       const heading = document.createElement('h3')
-      appendLinkedText(heading, title || '最新消息')
+      appendLinkedText(heading, title)
       header.appendChild(heading)
       if (date) {
         const dateElement = document.createElement('time')
@@ -87,7 +90,7 @@
       }
       article.appendChild(header)
 
-      if (content && content !== title) {
+      if (content) {
         const contentElement = document.createElement('p')
         contentElement.className = 'news-content'
         appendLinkedText(contentElement, content)
@@ -108,18 +111,30 @@
   }
 
   if (newsList) {
-    fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`)
-      .then(response => {
-        if (!response.ok) throw new Error('Unable to load spreadsheet')
-        return response.text()
-      })
-      .then(text => {
-        const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1))
-        renderNews(json.table)
-      })
-      .catch(() => {
+    const callbackName = `veckyNewsCallback_${Date.now()}`
+    const script = document.createElement('script')
+    const timeout = window.setTimeout(() => script.onerror(), 12000)
+
+    window[callbackName] = response => {
+      window.clearTimeout(timeout)
+      delete window[callbackName]
+      script.remove()
+
+      if (response?.status === 'ok' && response.table) {
+        renderNews(response.table)
+      } else {
         newsList.innerHTML = '<p class="news-status">最新消息暫時無法載入，請稍後再試。</p>'
-      })
+      }
+    }
+
+    script.onerror = () => {
+      window.clearTimeout(timeout)
+      delete window[callbackName]
+      script.remove()
+      newsList.innerHTML = '<p class="news-status">最新消息暫時無法載入，請稍後再試。</p>'
+    }
+    script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=${encodeURIComponent(`out:json;responseHandler:${callbackName}`)}`
+    document.head.appendChild(script)
   }
 
   /**
@@ -131,20 +146,6 @@
       return [...document.querySelectorAll(el)]
     } else {
       return document.querySelector(el)
-    }
-  }
-
-  /**
-   * Easy event listener function
-   */
-  const on = (type, el, listener, all = false) => {
-    let selectEl = select(el, all)
-    if (selectEl) {
-      if (all) {
-        selectEl.forEach(e => e.addEventListener(type, listener))
-      } else {
-        selectEl.addEventListener(type, listener)
-      }
     }
   }
 
@@ -173,7 +174,7 @@
     })
   }
   window.addEventListener('load', navbarlinksActive)
-  onscroll(document, navbarlinksActive)
+  onscroll(window, navbarlinksActive)
 
   /**
    * Scrolls to an element with header offset
@@ -202,7 +203,7 @@
       }
     }
     window.addEventListener('load', headerScrolled)
-    onscroll(document, headerScrolled)
+    onscroll(window, headerScrolled)
   }
 
   /**
@@ -218,62 +219,122 @@
       }
     }
     window.addEventListener('load', toggleBacktotop)
-    onscroll(document, toggleBacktotop)
+    onscroll(window, toggleBacktotop)
   }
 
-  /**
-   * Mobile nav toggle
-   */
-  on('click', '.mobile-nav-toggle', function(e) {
-    select('#navbar').classList.toggle('navbar-mobile')
-    this.classList.toggle('bi-list')
-    this.classList.toggle('bi-x')
+  const navbar = select('#navbar')
+  const navbarToggle = select('.mobile-nav-toggle')
+  const menuIcon = select('.menu-icon')
+
+  const closeMobileNav = () => {
+    if (!navbar || !navbar.classList.contains('navbar-mobile')) return
+    navbar.classList.remove('navbar-mobile')
+    navbarToggle.setAttribute('aria-expanded', 'false')
+    navbarToggle.setAttribute('aria-label', '開啟導覽選單')
+    menuIcon.textContent = '☰'
+  }
+
+  if (navbar && navbarToggle) {
+    navbarToggle.addEventListener('click', () => {
+      const isOpen = navbar.classList.toggle('navbar-mobile')
+      navbarToggle.setAttribute('aria-expanded', String(isOpen))
+      navbarToggle.setAttribute('aria-label', isOpen ? '關閉導覽選單' : '開啟導覽選單')
+      menuIcon.textContent = isOpen ? '×' : '☰'
+    })
+  }
+
+  document.querySelectorAll('a.scrollto').forEach(link => {
+    link.addEventListener('click', event => {
+      const target = document.getElementById(link.hash.slice(1))
+      if (!target) return
+      event.preventDefault()
+      closeMobileNav()
+      scrollto(`#${target.id}`)
+    })
   })
 
-  /**
-   * Mobile nav dropdowns activate
-   */
-  on('click', '.navbar .dropdown > a', function(e) {
-    if (select('#navbar').classList.contains('navbar-mobile')) {
-      e.preventDefault()
-      this.nextElementSibling.classList.toggle('dropdown-active')
-    }
-  }, true)
-
-  /**
-   * Scrool with ofset on links with a class name .scrollto
-   */
-  on('click', '.scrollto', function(e) {
-    if (select(this.hash)) {
-      e.preventDefault()
-
-      let navbar = select('#navbar')
-      if (navbar.classList.contains('navbar-mobile')) {
-        navbar.classList.remove('navbar-mobile')
-        let navbarToggle = select('.mobile-nav-toggle')
-        navbarToggle.classList.toggle('bi-list')
-        navbarToggle.classList.toggle('bi-x')
-      }
-      scrollto(this.hash)
-    }
-  }, true)
-
-  /**
-   * Scroll with ofset on page load with hash links in the url
-   */
   window.addEventListener('load', () => {
-    if (window.location.hash) {
-      if (select(window.location.hash)) {
-        scrollto(window.location.hash)
-      }
+    const targetId = window.location.hash.slice(1)
+    if (targetId && document.getElementById(targetId)) {
+      scrollto(`#${targetId}`)
     }
-  });
+  })
 
-  /**
-   * Initiate portfolio lightbox 
-   */
-  const portfolioLightbox = GLightbox({
-    selector: '.portfolio-lightbox'
-  });
+  document.querySelectorAll('[data-faq-toggle]').forEach(button => {
+    button.addEventListener('click', () => {
+      const answer = document.getElementById(button.dataset.faqToggle)
+      if (!answer) return
+
+      const willOpen = answer.hidden
+      document.querySelectorAll('[data-faq-toggle]').forEach(otherButton => {
+        const otherAnswer = document.getElementById(otherButton.dataset.faqToggle)
+        otherButton.setAttribute('aria-expanded', 'false')
+        otherButton.classList.add('collapsed')
+        if (otherAnswer) otherAnswer.hidden = true
+      })
+
+      if (willOpen) {
+        answer.hidden = false
+        button.setAttribute('aria-expanded', 'true')
+        button.classList.remove('collapsed')
+      }
+    })
+  })
+
+  const galleryLinks = [...document.querySelectorAll('.portfolio-lightbox')]
+  if (galleryLinks.length) {
+    const dialog = document.createElement('dialog')
+    dialog.className = 'lightbox-dialog'
+    dialog.setAttribute('aria-label', '作品照片檢視器')
+
+    const image = document.createElement('img')
+    const closeButton = document.createElement('button')
+    closeButton.className = 'lightbox-close'
+    closeButton.type = 'button'
+    closeButton.setAttribute('aria-label', '關閉照片')
+    closeButton.textContent = '×'
+
+    const previousButton = document.createElement('button')
+    previousButton.className = 'lightbox-previous'
+    previousButton.type = 'button'
+    previousButton.setAttribute('aria-label', '上一張作品')
+    previousButton.textContent = '‹'
+
+    const nextButton = document.createElement('button')
+    nextButton.className = 'lightbox-next'
+    nextButton.type = 'button'
+    nextButton.setAttribute('aria-label', '下一張作品')
+    nextButton.textContent = '›'
+    dialog.append(image, closeButton, previousButton, nextButton)
+    document.body.appendChild(dialog)
+
+    let activeImage = 0
+    const showImage = index => {
+      activeImage = (index + galleryLinks.length) % galleryLinks.length
+      const link = galleryLinks[activeImage]
+      image.src = link.href
+      image.alt = link.closest('.portfolio-wrap')?.querySelector('img')?.alt || '髮型作品'
+    }
+
+    galleryLinks.forEach((link, index) => {
+      link.addEventListener('click', event => {
+        event.preventDefault()
+        showImage(index)
+        dialog.showModal()
+        closeButton.focus()
+      })
+    })
+
+    closeButton.addEventListener('click', () => dialog.close())
+    previousButton.addEventListener('click', () => showImage(activeImage - 1))
+    nextButton.addEventListener('click', () => showImage(activeImage + 1))
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close()
+    })
+    dialog.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft') showImage(activeImage - 1)
+      if (event.key === 'ArrowRight') showImage(activeImage + 1)
+    })
+  }
 
 })()

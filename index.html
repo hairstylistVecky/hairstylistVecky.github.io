@@ -109,12 +109,7 @@
     rel="stylesheet">
 
 
-  <!-- Vendor CSS Files -->
-  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-
-  <!-- Template Main CSS File -->
+  <!-- Native site styles -->
   <link href="assets/css/style.css" rel="stylesheet">
 
 
@@ -143,7 +138,9 @@
           <li><a class="nav-link scrollto" href="#map">地圖</a></li>
           <li><a class="nav-link booking-link" href="https://dear-logue-pr.com/menu.php?rk=twvec&amp;x=63&amp;y=56" target="_blank" rel="noopener">立即預約</a></li>
         </ul>
-        <i class="bi bi-list mobile-nav-toggle"></i>
+        <button type="button" class="mobile-nav-toggle" aria-label="開啟導覽選單" aria-expanded="false">
+          <span class="menu-icon" aria-hidden="true">☰</span>
+        </button>
       </nav><!-- .navbar -->
 
     </div>
@@ -388,9 +385,9 @@
         <ul class="faq-list">
 
           <li>
-            <button type="button" data-bs-toggle="collapse" class="collapsed question" data-bs-target="#faq1" aria-expanded="false" aria-controls="faq1">附近最近的停車場? <i
+            <button type="button" data-faq-toggle="faq1" class="collapsed question" aria-expanded="false" aria-controls="faq1">附近最近的停車場? <i
                 class="bi bi-chevron-down icon-show"></i><i class="bi bi-chevron-up icon-close"></i></button>
-            <div id="faq1" class="collapse" data-bs-parent=".faq-list">
+            <div id="faq1" class="faq-answer" hidden>
               <p>
                 林森公園地下停車場(嘟嘟房) 台北市中山區南京東路一段35號 停車格數量850
                 <br />
@@ -411,9 +408,9 @@
           </li>
 
           <li>
-            <button type="button" data-bs-toggle="collapse" data-bs-target="#faq2" class="collapsed question" aria-expanded="false" aria-controls="faq2">付費方式? <i
+            <button type="button" data-faq-toggle="faq2" class="collapsed question" aria-expanded="false" aria-controls="faq2">付費方式? <i
                 class="bi bi-chevron-down icon-show"></i><i class="bi bi-chevron-up icon-close"></i></button>
-            <div id="faq2" class="collapse" data-bs-parent=".faq-list">
+            <div id="faq2" class="faq-answer" hidden>
               <p>
                 現金、信用卡
               </p>
@@ -421,9 +418,9 @@
           </li>
 
           <li>
-            <button type="button" data-bs-toggle="collapse" data-bs-target="#faq3" class="collapsed question" aria-expanded="false" aria-controls="faq3">離中山站最近的捷運站出口? <i
+            <button type="button" data-faq-toggle="faq3" class="collapsed question" aria-expanded="false" aria-controls="faq3">離中山站最近的捷運站出口? <i
                 class="bi bi-chevron-down icon-show"></i><i class="bi bi-chevron-up icon-close"></i></button>
-            <div id="faq3" class="collapse" data-bs-parent=".faq-list">
+            <div id="faq3" class="faq-answer" hidden>
               <p>
                 3號出口步行4分鐘
               </p>
@@ -431,9 +428,9 @@
           </li>
 
           <li>
-            <button type="button" data-bs-toggle="collapse" data-bs-target="#faq4" class="collapsed question" aria-expanded="false" aria-controls="faq4">預約方式? <i
+            <button type="button" data-faq-toggle="faq4" class="collapsed question" aria-expanded="false" aria-controls="faq4">預約方式? <i
                 class="bi bi-chevron-down icon-show"></i><i class="bi bi-chevron-up icon-close"></i></button>
-            <div id="faq4" class="collapse" data-bs-parent=".faq-list">
+            <div id="faq4" class="faq-answer" hidden>
               <p>
                 1.使用預約系統預約
                 <a href="https://dear-logue-pr.com/menu.php?rk=twvec&x=63&y=56">點我進入預約系統</a>
@@ -561,11 +558,7 @@
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
       class="bi bi-arrow-up-short"></i></a>
 
-  <!-- Vendor JS Files -->
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-
-  <!-- Template Main JS File -->
+  <!-- Native site interactions -->
   <script src="assets/js/main.js"></script>
 
 </body>
